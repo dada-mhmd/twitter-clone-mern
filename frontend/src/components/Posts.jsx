@@ -1,25 +1,58 @@
-import { POSTS } from '../dummyData';
+import { useEffect } from 'react';
 import Post from './Post';
 import PostSkeleton from './skeletons/PostSkeleton';
+import { useQuery } from '@tanstack/react-query';
 
-const Posts = () => {
-  const isLoading = false;
+const Posts = ({ feedType }) => {
+  const getPost = () => {
+    if (feedType === 'forYou') {
+      return '/api/posts';
+    }
+    if (feedType === 'following') {
+      return '/api/posts/following';
+    }
+
+    return '/api/posts';
+  };
+
+  const POST_ENDPOINT = getPost();
+
+  const { data, isLoading, refetch, isRefetching } = useQuery({
+    queryKey: ['posts'],
+    queryFn: async () => {
+      try {
+        const res = await fetch(POST_ENDPOINT);
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to fetch posts');
+        }
+
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+  });
+
+  useEffect(() => {
+    refetch();
+  }, [feedType, refetch]);
 
   return (
     <>
-      {isLoading && (
+      {(isLoading || isRefetching) && (
         <div className='flex flex-col justify-center'>
           <PostSkeleton />
           <PostSkeleton />
           <PostSkeleton />
         </div>
       )}
-      {!isLoading && POSTS?.length === 0 && (
-        <p className='text-center my-4'>No posts in this tab. Switch 👻</p>
+      {!isLoading && !isRefetching && data?.length === 0 && (
+        <p className='text-center my-4'>No posts in this tab</p>
       )}
-      {!isLoading && POSTS && (
+      {!isLoading && !isRefetching && data && (
         <div>
-          {POSTS.map((post) => (
+          {data?.map((post) => (
             <Post key={post._id} post={post} />
           ))}
         </div>
