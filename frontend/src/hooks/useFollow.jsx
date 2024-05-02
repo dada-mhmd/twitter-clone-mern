@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 
 const useFollow = () => {
   const queryClient = useQueryClient();
@@ -22,7 +23,9 @@ const useFollow = () => {
         queryClient.invalidateQueries({ queryKey: ['authUser'] }),
       ]);
     },
-    onError: () => {},
+    onError: (error) => {
+      toast.error(error.message);
+    },
   });
 
   return { followUnfollow, isPending };
