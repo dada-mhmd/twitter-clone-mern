@@ -11,6 +11,7 @@ import {
 import { BiRepost } from 'react-icons/bi';
 
 import LoadingSpinner from './Spinner';
+import { formatPostDate } from '../pages/helpers/date';
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState('');
@@ -68,12 +69,39 @@ const Post = ({ post }) => {
     },
   });
 
+  const { mutate: commentPost, isPending: isCommentPending } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/comment/${post._id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: comment }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error('Failed to comment on post');
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      toast.success('Comment posted successfully');
+      setComment('');
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const postOwner = post.user;
   const isLiked = post.likes?.includes(authUser?._id);
 
   const isMyPost = authUser._id === post.user._id;
 
-  const formattedDate = '1h';
+  const formattedDate = formatPostDate(post.createdAt);
 
   const isCommenting = false;
 
@@ -83,6 +111,8 @@ const Post = ({ post }) => {
 
   const handlePostComment = (e) => {
     e.preventDefault();
+    if (isCommentPending) return;
+    commentPost();
   };
 
   const handleLikePost = () => {
