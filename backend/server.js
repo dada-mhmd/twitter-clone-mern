@@ -1,6 +1,7 @@
 import express from 'express';
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
+import path from 'path';
 import { v2 as cloudinary } from 'cloudinary';
 
 import authRoutes from './routes/authRoutes.js';
@@ -26,6 +27,18 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+// for deployment
+const __dirname = path.resolve();
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '/frontend/dist')));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html'));
+  });
+}
+// end of deployment
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
